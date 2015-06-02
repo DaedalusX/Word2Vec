@@ -47,8 +47,14 @@ def train_model(new_data):
     return model
 
 
+def save_model(fname):
+    model.save(fname)
+
+
 if __name__ == '__main__':
     data = read_data(path)
     print len(data)
     new_data = prepare_data(data)
     print len(new_data)
+    model = train_model(new_data)
+    save_model('modelv1')
