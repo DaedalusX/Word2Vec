@@ -42,6 +42,11 @@ def prepare_data(data):
     return new_data
 
 
+def train_model(new_data):
+    model = Word2Vec(new_data)
+    return model
+
+
 if __name__ == '__main__':
     data = read_data(path)
     print len(data)
