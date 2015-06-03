@@ -70,8 +70,9 @@ def word2vec_similar(word, model=None):
     return model.most_similar(word, topn=10)
 
 
-if __name__ == '__main__':
 
+if __name__ == '__main__':
+    '''
     data = read_data(path)
     print len(data)
     new_data = prepare_data(data)
@@ -79,13 +80,11 @@ if __name__ == '__main__':
     model = train_model(new_data)
     print 'saving model'
     save_model('modelv1')
-
-
     '''
+
     model = read_model('modelv1')
     # vocabs = return_vocab(model)
     # print len(vocabs)
     word2vec_similar(word='boots')
-    '''
 
     print 'end'
