@@ -1,21 +1,14 @@
-from gensim import models
-from gensim import corpora
-from gensim.models import Word2Vec
-import pandas as pd
-import numpy as np
-from nltk.corpus import brown, movie_reviews, treebank
-import string
 import csv
-import unicodedata
-import sys
-from collections import Counter
-import pickle
 import re
-import cPickle
+from gensim.models import Word2Vec
 from nltk.corpus import stopwords
+from collections import defaultdict
 stoplist = set(stopwords.words('english'))
 
 path = '/Users/salilnavgire/Downloads/irene_comments.csv'
+
+model_name = 'modelv1'
+alphabet = 'abcdefghijklmnopqrstuvwxyz'
 
 
 def read_data(path):
@@ -62,29 +55,74 @@ def return_vocab(model):
     return vocabs
 
 
-def word2vec_similar(word, model=None):
+def words(text): return re.findall('[a-z]+', text.lower())
+
+
+def train(features):
+    model = defaultdict(lambda: 1)
+    for f in features:
+        model[f] += 1
+    return model
+
+
+def edits1(word):
+    splits = [(word[:i], word[i:]) for i in range(len(word) + 1)]
+    deletes = [a + b[1:] for a, b in splits if b]
+    transposes = [a + b[1] + b[0] + b[2:] for a, b in splits if len(b) > 1]
+    replaces = [a + c + b[1:] for a, b in splits for c in alphabet if b]
+    inserts = [a + c + b for a, b in splits for c in alphabet]
+    return set(deletes + transposes + replaces + inserts)
+
+
+def known_edits2(word, NWORDS):
+    return set(e2 for e1 in edits1(word) for e2 in edits1(e1) if e2 in NWORDS)
+
+
+def known(words, NWORDS): return set(w for w in words if w in NWORDS)
+
+
+def correct(word, NWORDS):
+    candidates = known([word], NWORDS) or known(edits1(word), NWORDS) or known_edits2(word, NWORDS) or [word]
+    return max(candidates, key=NWORDS.get)
+
+
+def word2vec_similar(word, features, model=None):
     if model is None:
-        model = read_model('modelv1')
+        model = read_model(model_name)
 
-    print model.most_similar(word, topn=10)
-    return model.most_similar(word, topn=10)
+    NWORDS = train(features)
+    if word in features:
+        print model.most_similar(word, topn=10)
+        return model.most_similar(word, topn=10)
+    else:
+        print 'word not in dictionary, did you mean->  ', correct(word, NWORDS)
+        print correct(word, NWORDS)
 
+
+def find_similar(word):
+    list3 = []
+    for res in features:
+        if re.search(word, res):
+            if len(res) <= len(word)+2:
+                list3.append(res)
+    return list3
+
+
+def word2vec_model_cache(path):
+    data = read_data(path)
+    new_data = prepare_data(data)
+    model = train_model(new_data)
+    print 'saving model'
+    save_model(model_name)
+    return model
 
 
 if __name__ == '__main__':
-    '''
-    data = read_data(path)
-    print len(data)
-    new_data = prepare_data(data)
-    print len(new_data)
-    model = train_model(new_data)
-    print 'saving model'
-    save_model('modelv1')
-    '''
+    # model = word2vec_model_cache(path)
 
-    model = read_model('modelv1')
-    # vocabs = return_vocab(model)
-    # print len(vocabs)
-    word2vec_similar(word='boots')
+    model = read_model(model_name)
+    features = return_vocab(model)
+
+    word2vec_similar(word='boots', features=features, model=model)
 
     print 'end'
