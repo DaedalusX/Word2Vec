@@ -12,6 +12,9 @@ alphabet = 'abcdefghijklmnopqrstuvwxyz'
 
 
 def read_data(path):
+    '''
+    Data is in csv format where each sentence is seperated by a comma
+    '''
     data = []
     with open(path, 'rb') as csvfile:
         spamreader = csv.reader(csvfile)
@@ -21,10 +24,13 @@ def read_data(path):
 
 
 def prepare_data(data):
+    '''
+    Clean data and remove stoplist
+    '''
     new_data = []
     for i, res in enumerate(data):
         try:
-            s = re.sub('[^a-zA-Z0-9\n\.]', ' ', res)
+            s = re.sub('[^a-zA-Z]', ' ', res)
             new = [x for x in s.lower().split() if x not in stoplist]
             if i % 10000 == 0:
                 print i
@@ -35,15 +41,24 @@ def prepare_data(data):
 
 
 def train_model(new_data):
+    '''
+    Train model using gensims Word2Vec
+    '''
     model = Word2Vec(new_data)
     return model
 
 
-def save_model(fname):
+def save_model(model, fname):
+    '''
+    Saves the model in pickle format
+    '''
     model.save(fname)
 
 
 def read_model(fname):
+    '''
+    Load cached model
+    '''
     model = Word2Vec.load(fname)
     return model
 
@@ -86,6 +101,15 @@ def correct(word, NWORDS):
     return max(candidates, key=NWORDS.get)
 
 
+def find_similar(word):
+    list3 = []
+    for res in features:
+        if re.search(word, res):
+            if len(res) <= len(word)+2:
+                list3.append(res)
+    return list3
+
+
 def word2vec_similar(word, features, model=None):
     if model is None:
         model = read_model(model_name)
@@ -99,21 +123,13 @@ def word2vec_similar(word, features, model=None):
         print correct(word, NWORDS)
 
 
-def find_similar(word):
-    list3 = []
-    for res in features:
-        if re.search(word, res):
-            if len(res) <= len(word)+2:
-                list3.append(res)
-    return list3
-
-
 def word2vec_model_cache(path):
     data = read_data(path)
     new_data = prepare_data(data)
     model = train_model(new_data)
+    print model
     print 'saving model'
-    save_model(model_name)
+    save_model(model, model_name)
     return model
 
 
